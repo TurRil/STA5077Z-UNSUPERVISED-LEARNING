@@ -1,0 +1,121 @@
+---
+title: "STA5077Z: UNSUPERVISED LEARNING - PROJECT"
+author: "Corne Oosthuizen - OSTAND005"
+date: 'Due: 14 August 2017'
+output:
+  word_document: default
+  html_document:
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+  comment: '>'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1 - Leukemia Dataset
+
+```{r one-dataset, eval=TRUE, echo=FALSE}
+
+# Leukemia dataset
+ld.data <- read.csv(file = "leukemia_array.txt", sep = "\t")
+
+# Transposed dataset
+ld.tdata <- t(ld.data)
+
+head(ld.data)
+```
+```{r one-dataset, eval=TRUE, echo=FALSE}
+dim(ld.data)
+dim(ld.tdata)
+```
+
+```{r one-dataset, eval=TRUE, echo=FALSE}
+
+pca.out <- prcomp(ld.tdata, cor=T, scores = T)
+pca.out
+pca.out$loadings
+names(pca.out)
+head(pca.out$scores)
+
+# Biplot
+biplot(pca.out, scale = 0, cex =0.5)
+
+# Scree plot
+names(pca.out)
+Variance <- (pca.out$sdev)^2
+max_Var <- round(max(Variance),1)
+Components <- c(1,2,3,4)
+Components <- as.integer(Components)
+plot(Components, Variance, main = "Scree Plot", xlab = "Number of Components", ylab = "Variance", type = "o", col = "blue", ylim = c(0, max_Var), axes = F)
+axis(1, at=1:4)
+axis(2, at=0:3)
+
+# Or you can just call screeplot()
+screeplot(pca.out, type = "l")
+```
+
+## Dataset
+The assignment uses a leukemia dataset. The data set comprises 22283 observations (genes) and sixteen samples (patients). The leukemia dataset contains gene expression levels for patients with poor and good leukemia progonosis. Good and poor leukemia progonosis is measured in terms of the number of leukemic cells that are present in the bone marrow after a period of treatment. Patients with low numbers have a good progonosis whereas patients with high numbers have a poor progonosis. Samples (columns) 1-8 represent the patients with good leukemia prognosis while samples 9-16 represent the patients with poor leukemia prognosis.
+
+The leukemia dataset is available on Vula under the tab: Data Science 2017 Resources/Unsupervised Learning/Assignment. 
+
+Download it and save it in your current folder. The R package will be used to carry out the assignment.
+
+
+## Principal Component Analysis (PCA).
+
+Note that when we perform PCA we assume that observations or samples are in the rows of a matrix and variables are in the columns. Here the observations are in the columns and the variables in the rows. This is the usual format in which microarray data is presented. 
+
+Carry out appropriate data transformation that will allow you to perform PCA. Consider performing PCA on:
+
+* Original data.
+* Standardised data.
+* Transformed original data using the log_transform.
+* log_transformed and standardised data.
+
+In each case, use relevant plots and otherwise to interpret your results.
+Next investigate the impact of including only the top 100 genes with the most variable expression levels across the samples. That is excluding genes that contribute mostly noise and no information. In this case you will have to find a way of isolating the top 100 genes with the most variable expression levels across the samples. Once these genes have been isolated. Perform PCA on the reduced data.
+
+Compare and contrast the results before and when the 100 genes with the most variable expression levels are used. What conclusions can you make.
+
+## Clustering Analysis.
+Copy the original leukemia data to a new file say data2.
+
+Use cluster analysis to find groups of patients that have similar progonosis on the basis of the expression of (1) all genes and (2) the top 100 most variable genes as found above.
+
+Identify and briefly describe the cluster method(s) used to formulate patient groups. That is, describe the similarity measure(s) used and whether or not the data were standardized, and briefly discuss why you chose this strategy.
+
+Evaluate the performance of cluster analysis in meeting the first objective above. That is, evaluate the stability of the cluster solution.
+
+## Problem Statement
+
+## Data Description
+
+## Conclusion
+
+# 2 - 
+
+## Problem Statement
+
+## Data Description
+
+## Conclusion
+
+
+# References
+
+* Project Description (assignment.pdf, DataScienceProject.html, leukemia_array.txt), Author: Juwa Nyirenda. Last Accessed: 24-Jul-2017 17:51. Vula Resources. 
+
+
+* R Core Team (2016). R: A language and environment for statistical computing. R Foundation for Statistical Computing,
+Vienna, Austria. URL: https://www.R-project.org/.
+
+
+```{r reference, echo = FALSE, eval = FALSE}
+# To get current citation information at time of document writing
+#citation("caret")
+```
+
