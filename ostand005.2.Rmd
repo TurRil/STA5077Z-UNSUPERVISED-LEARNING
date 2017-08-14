@@ -22,6 +22,7 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen=1, digits=5)
 suppressWarnings(suppressMessages(library(tidyverse)))
 suppressWarnings(suppressMessages(library(ggplot2)))
+library(formattable)
 
 lr.workflows.raw <- read.csv(file = "data/workflows.csv", sep = ",", quote = '"')
 lr.operations.raw <- read.csv(file = "data/operations.csv", sep = ",", quote = '"')
@@ -55,25 +56,25 @@ names(lr.workflows)[6] = "run"
 names(lr.workflows)[8] = "day"
 names(lr.workflows)[9] = "hour"
 
-lr.workflows %>%
+formattable(lr.workflows %>%
 select(tracks, type, queue, run) %>%
 group_by(tracks, type) %>% 
 summarise(count = n(), mean.queue_time = mean(queue), mean.run_time = mean(run)) %>% 
 mutate(mean.full_time = mean.queue_time + mean.run_time) %>% 
 arrange(tracks, type) %>% 
-as.tibble()
+as.tibble())
 ```
 ```{r lr-summary-1, eval=TRUE, echo=FALSE}
 summary(select(lr.workflows, -parent))
 ```
 
 ```{r lr-display-2, eval=TRUE, echo=FALSE}
-lr.data %>% 
+formattable(lr.data %>% 
 group_by(type) %>% 
 summarise(count = n(), mean.queue_time = mean(queue), mean.run_time = mean(run)) %>% 
 mutate(mean.full_time = mean.queue_time + mean.run_time) %>% 
 arrange(desc(mean.full_time), type) %>% 
-as.tibble()
+as.tibble())
 ```
 ```{r lr-summary, eval=TRUE, echo=FALSE}
 lr.som.data <- select(lr.data, type, queue, run, day, hour, tracks, duration) %>% 
@@ -172,19 +173,19 @@ lr.m.scaled[,c(2,3,4,8)] <- scale(lr.som.data[,c(2,3,4,8)])
 ```{r lr-mds, eval=TRUE, echo=FALSE}
 library(cluster)
 #library(MASS)
-library(smacof)
+#library(smacof)
 
-lr.distance <- daisy(filter(lr.som.data, -queue, -run), metric="gower")
-out.Euc <- smacofSym(lr.distance, type="ratio")$conf
+#lr.distance <- daisy(filter(lr.som.data, -queue, -run), metric="gower")
+#out.Euc <- smacofSym(lr.distance, type="ratio")$conf
 ```
 
 ```{r lr-mds-plot, eval=TRUE, echo=FALSE}
 
-plot(out.Euc, type="1", xlab="", ylab="", xaxt="n", yaxt="n", asp=1, main= "MDS")#, col = levels(lr.som.data$type))
+#plot(out.Euc, xlab="", ylab="", xaxt="n", yaxt="n", asp=1, main= "MDS")#, col = levels(lr.som.data$type))
 
-for (i in 1:nrow(lr.som.data)) {
-  text (out.Euc[i,1], out.Euc[i,2], lr.som.data$type[i], cex=0.75)
-}
+#for (i in 1:nrow(lr.som.data)) {
+#  text (out.Euc[i,1], out.Euc[i,2], lr.som.data$type[i], cex=0.75)
+#}
 ```
 
 
