@@ -24,13 +24,52 @@ knitr::knit_hooks$set(inline = inline_hook) # change numbe format for inline tex
 
 options(scipen=1, digits=5)
 ```
+```{r one-dataset, eval=TRUE, echo=FALSE}
+dim(ld.data)
+dim(ld.tdata)
+```
 
-```{r pca-1, eval=TRUE, echo=FALSE}
+```{r one-dataset, eval=TRUE, echo=FALSE}
+
+pca.out <- prcomp(ld.tdata, scale = TRUE)
+#pca.out
+#pca.out$loadings
+names(pca.out)
+
+  pca.var <- (pca.out$sdev)^2
+  pca.var.max <- round(max(pca.var),1)
+  
+  pca.comp <- 1:length(pca.var)
+  pca.comp <- as.integer(pca.comp)
+  
+screeplot(pca.out, type = "l")
+
+plot(pca.comp, pca.var, 
+       main = "PCA",
+       xlab = "Number of Components", 
+       ylab = "Variances",
+       type = "l",
+       col  = "blue",
+       ylim = c(0, pca.var.max))
+
+plot(summary(pca.out)$importance[3,], type="l", 
+       ylab="% Variance Explained", 
+       xlab="nth component (decreasing order)", 
+       main = "PCA",
+       col = "#161F63")
+
+pca.loadings <- as.data.frame(pca.out$rotation)
+pca.loadings
+
+summary(pca.out)
+
+```
+```{r one-dataset, eval=TRUE, echo=FALSE}
 
 pca.out <- prcomp(ld.tdata, scale = FALSE)
 #pca.out
 #pca.out$loadings
-#names(pca.out)
+names(pca.out)
 
   pca.var <- (pca.out$sdev)^2
   pca.var.max <- round(max(pca.var),1)
@@ -38,10 +77,10 @@ pca.out <- prcomp(ld.tdata, scale = FALSE)
   pca.comp <- 1:length(pca.var)
   pca.comp <- as.integer(pca.comp)
   
-#screeplot(pca.out, type = "l")
+screeplot(pca.out, type = "l")
 
 plot(pca.comp, pca.var, 
-       main = "PCA - Unscaled",
+       main = "PCA",
        xlab = "Number of Components", 
        ylab = "Variances",
        type = "l",
@@ -51,35 +90,47 @@ plot(pca.comp, pca.var,
 plot(summary(pca.out)$importance[3,], type="l", 
        ylab="% Variance Explained", 
        xlab="nth component (decreasing order)", 
-       main = "PCA - Unscaled",
+       main = "PCA",
        col = "#161F63")
 
-pca.loadings <- as.data.frame(pca.out$rotation)
-```
-```{r pca-1-table, eval=TRUE, echo=FALSE}
-#formattable(head(pca.loadings), row.names = TRUE,  format = "f", digits = 10)
-#table(head(pca.loadings))
 ```
 
-```{r pca-1-summary, eval=TRUE, echo=FALSE}
-options(scipen=1, digits=10)
-summary(pca.out)
-options(scipen=1, digits=5)
+```{r}
+
+# Biplot
+biplot(pca.out, scale = 0, cex =0.5)
+
+# Scree plot
+names(pca.out)
+Variance <- (pca.out$sdev)^2
+max_Var <- round(max(Variance),1)
+Components <- c(1,2,3,4)
+Components <- as.integer(Components)
+plot(Components, Variance, main = "Scree Plot", xlab = "Number of Components", ylab = "Variance", type = "o", col = "blue", ylim = c(0, max_Var), axes = F)
+axis(1, at=1:4)
+axis(2, at=0:3)
+
+# Or you can just call screeplot()
+screeplot(pca.out, type = "l")
 ```
-```{r pca-1-ggplots, eval=TRUE, echo=FALSE}
-pca <- pca.out
+
+
+```{r}
+
+# NON STANDARD - NOT SCALED
+pca <- prcomp(ld.tdata, retx = TRUE, center = FALSE, scale = FALSE)
 expl.var <- round(pca$sdev^2/sum(pca$sdev^2)*100) # percent explained variance
 
 
 pc <- c(1,2) # principal components to plot
 COLOR <- c(2:4)
 
-#plot(pca$x[,pc], cex=1, 
-# xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
-# ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
-#)
+plot(pca$x[,pc], cex=1, 
+ xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
+ ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
+)
 
-#screeplot(pca, type = "l")
+screeplot(pca, type = "l")
 
 scores = as.data.frame(pca$x)
 
@@ -91,86 +142,37 @@ ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(ld.tdata))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Unscaled")
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC1, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC2, y = PC1, label = rownames(ld.tdata))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Unscaled")
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC3, y = PC4, label = rownames(ld.tdata))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Unscaled")
-
-pairs(scores[1:5])
+  ggtitle("PCA plot")
 ```
 
-```{r pca-1-ggplots, eval=TRUE, echo=FALSE}
+```{r}
 
-# Biplot
-#suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
-#pca <- prcomp(ld.tdata, retx = TRUE, center = TRUE, scale = TRUE)
-ggbiplot(pca, obs.scale = 1, var.scale = 1,
-  groups = c("Good","Poor"), ellipse = TRUE, circle = TRUE) +
-  scale_color_discrete(name = '') +
-  theme(legend.direction = 'horizontal', legend.position = 'top')
-
-```
-
-```{r pca-2, eval=TRUE, echo=FALSE}
-
-pca.out <- prcomp(ld.tdata, center = TRUE, scale = TRUE)
-#pca.out
-#pca.out$loadings
-#names(pca.out)
-
-  pca.var <- (pca.out$sdev)^2
-  pca.var.max <- round(max(pca.var),1)
-  
-  pca.comp <- 1:length(pca.var)
-  pca.comp <- as.integer(pca.comp)
-  
-#screeplot(pca.out, type = "l")
-
-plot(pca.comp, pca.var, 
-       main = "PCA - Scaled",
-       xlab = "Number of Components", 
-       ylab = "Variances",
-       type = "l",
-       col  = "blue",
-       ylim = c(0, pca.var.max))
-
-plot(summary(pca.out)$importance[3,], type="l", 
-       ylab="% Variance Explained", 
-       xlab="nth component (decreasing order)", 
-       main = "PCA - Scaled",
-       col = "#161F63")
-
-```
-
-```{r pca-2-summary, eval=TRUE, echo=FALSE}
-options(scipen=1, digits=10)
-summary(pca.out)
-options(scipen=1, digits=5)
-```
-
-```{r pca-2-ggplots, eval=TRUE, echo=FALSE}
-pca <- pca.out
+# STANDARDIZED - SCALED
+pca <- prcomp(ld.tdata, retx = TRUE, center = TRUE, scale = TRUE)
 expl.var <- round(pca$sdev^2/sum(pca$sdev^2)*100) # percent explained variance
 
 
 pc <- c(1,2) # principal components to plot
 COLOR <- c(2:4)
 
-#plot(pca$x[,pc], cex=1, 
-# xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
-# ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
-#)
+plot(pca$x[,pc], cex=1, 
+ xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
+ ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
+)
 
-#screeplot(pca, type = "l")
+screeplot(pca, type = "l")
 
 scores = as.data.frame(pca$x)
 
@@ -182,92 +184,36 @@ ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(ld.tdata))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Scaled")
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC1, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC2, y = PC1, label = rownames(ld.tdata))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Scaled")
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC3, y = PC2, label = rownames(ld.tdata))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Scaled")
-
-pairs(scores[1:5])
+  ggtitle("PCA plot")
 ```
+```{r}
 
-
-
-
-```{r pca-2-ggplots, eval=TRUE, echo=FALSE}
-
-# Biplot
-#suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
-#pca <- prcomp(ld.tdata, retx = TRUE, center = TRUE, scale = TRUE)
-ggbiplot(pca, obs.scale = 1, var.scale = 1,
-  groups = c("Good","Poor"), ellipse = TRUE, circle = TRUE) +
-  scale_color_discrete(name = '') +
-  theme(legend.direction = 'horizontal', legend.position = 'top')
-
-```
-
-```{r pca-3, eval=TRUE, echo=FALSE}
-
-ld.ldata <- log(ld.tdata)
-
-pca.out <- prcomp(ld.ldata, scale = FALSE)
-#pca.out
-#pca.out$loadings
-#names(pca.out)
-
-  pca.var <- (pca.out$sdev)^2
-  pca.var.max <- round(max(pca.var),1)
-  
-  pca.comp <- 1:length(pca.var)
-  pca.comp <- as.integer(pca.comp)
-  
-#screeplot(pca.out, type = "l")
-
-plot(pca.comp, pca.var, 
-       main = "PCA - Log Transformed",
-       xlab = "Number of Components", 
-       ylab = "Variances",
-       type = "l",
-       col  = "blue",
-       ylim = c(0, pca.var.max))
-
-plot(summary(pca.out)$importance[3,], type="l", 
-       ylab="% Variance Explained", 
-       xlab="nth component (decreasing order)", 
-       main = "PCA - Log Transformed",
-       col = "#161F63")
-
-pca.loadings <- as.data.frame(pca.out$rotation)
-```
-
-```{r pca-3-summary, eval=TRUE, echo=FALSE}
-options(scipen=1, digits=10)
-summary(pca.out)
-options(scipen=1, digits=5)
-```
-
-```{r pca-3-ggplots, eval=TRUE, echo=FALSE}
-pca <- pca.out
+# STANDARDIZED - SCALED (own std)
+pca <- prcomp(ld.tstd, retx = TRUE, center = F, scale = F)
 expl.var <- round(pca$sdev^2/sum(pca$sdev^2)*100) # percent explained variance
 
 
 pc <- c(1,2) # principal components to plot
 COLOR <- c(2:4)
 
-#plot(pca$x[,pc], cex=1, 
-# xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
-# ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
-#)
+plot(pca$x[,pc], cex=1, 
+ xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
+ ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
+)
 
-#screeplot(pca, type = "l")
+screeplot(pca, type = "l")
 
 scores = as.data.frame(pca$x)
 
@@ -275,92 +221,40 @@ COLORS <- c("#5da423","#5da423","#5da423","#5da423","#5da423","#5da423","#5da423
             "#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13")
 
 # plot of observations
-ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(ld.tstd))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Log Transformed")
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC1, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC2, y = PC1, label = rownames(ld.tstd))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Log Transformed")
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC3, y = PC2, label = rownames(ld.tstd))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Log Transformed")
-
-pairs(scores[1:5])
+  ggtitle("PCA plot")
 ```
+```{r}
 
-```{r pca-3-ggplots, eval=TRUE, echo=FALSE}
-
-# Biplot
-#suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
-#pca <- prcomp(ld.tdata, retx = TRUE, center = TRUE, scale = TRUE)
-ggbiplot(pca, obs.scale = 1, var.scale = 1,
-  groups = c("Good","Poor"), ellipse = TRUE, circle = TRUE) +
-  scale_color_discrete(name = '') +
-  theme(legend.direction = 'horizontal', legend.position = 'top')
-
-```
-```{r pca-4, eval=TRUE, echo=FALSE}
-
-ld.ldata <- log(ld.tdata)
-
-pca.out <- prcomp(ld.ldata, scale = TRUE, center = TRUE)
-#pca.out
-#pca.out$loadings
-#names(pca.out)
-
-  pca.var <- (pca.out$sdev)^2
-  pca.var.max <- round(max(pca.var),1)
-  
-  pca.comp <- 1:length(pca.var)
-  pca.comp <- as.integer(pca.comp)
-  
-#screeplot(pca.out, type = "l")
-
-plot(pca.comp, pca.var, 
-       main = "PCA - Log Transformed and Scaled",
-       xlab = "Number of Components", 
-       ylab = "Variances",
-       type = "l",
-       col  = "blue",
-       ylim = c(0, pca.var.max))
-
-plot(summary(pca.out)$importance[3,], type="l", 
-       ylab="% Variance Explained", 
-       xlab="nth component (decreasing order)", 
-       main = "PCA - Log Transformed and Scaled",
-       col = "#161F63")
-
-pca.loadings <- as.data.frame(pca.out$rotation)
-```
-
-```{r pca-4-summary, eval=TRUE, echo=FALSE}
-options(scipen=1, digits=10)
-summary(pca.out)
-options(scipen=1, digits=5)
-```
-
-```{r pca-4-ggplots, eval=TRUE, echo=FALSE}
-pca <- pca.out
+# STANDARDIZED - SCALED
+pca <- prcomp(log(ld.tdata), retx = TRUE, center = T, scale = F)
 expl.var <- round(pca$sdev^2/sum(pca$sdev^2)*100) # percent explained variance
 
 
 pc <- c(1,2) # principal components to plot
 COLOR <- c(2:4)
 
-#plot(pca$x[,pc], cex=1, 
-# xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
-# ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
-#)
+plot(pca$x[,pc], cex=1, 
+ xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
+ ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
+)
 
-#screeplot(pca, type = "l")
+screeplot(pca, type = "l")
 
 scores = as.data.frame(pca$x)
 
@@ -368,104 +262,70 @@ COLORS <- c("#5da423","#5da423","#5da423","#5da423","#5da423","#5da423","#5da423
             "#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13")
 
 # plot of observations
-ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(ld.tstd))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Log Transformed and Scaled")
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC1, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC2, y = PC1, label = rownames(ld.tstd))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Log Transformed and Scaled")
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC3, y = PC2, label = rownames(ld.tstd))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle("PCA - Log Transformed and Scaled")
+  ggtitle("PCA plot")
 
 pairs(scores[1:5])
 ```
 
-```{r pca-4-ggplots, eval=TRUE, echo=FALSE}
 
-# Biplot
-#suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
+```{r}
 #pca <- prcomp(ld.tdata, retx = TRUE, center = TRUE, scale = TRUE)
+
+library(ggbiplot)
+
 ggbiplot(pca, obs.scale = 1, var.scale = 1,
   groups = c("Good","Poor"), ellipse = TRUE, circle = TRUE) +
   scale_color_discrete(name = '') +
   theme(legend.direction = 'horizontal', legend.position = 'top')
-```
 
-### Select the Top 100 
-```{r pca-top-data, eval=TRUE, echo=FALSE}
+```
+```{r}
 ld.top.names <- abs(pca$rotation)
 ld.top.names <- rownames(ld.top.names)[order(ld.top.names[,1], decreasing = TRUE)][1:100]
 ld.top.data <- ld.data[ld.top.names,]
 
-head(ld.top.data)
+head(ld.top)
+dim(ld.top)
 
 ld.top.tdata <- t(ld.top.data)
-#ld.top.tstd <- scale(ld.top.data) prcomp does this
+ld.top.tstd <- scale(ld.top.data)
 ld.top.ldata <- log(ld.top.tdata)
+
 ```
+```{r}
 
-```{r pca-top-1, eval=TRUE, echo=FALSE}
+# tdata
+# ldata
 
-title <- "PCA Top 100 - Unscaled"
-pca.out <- prcomp(ld.top.tdata, scale = FALSE, center = FALSE)
-#pca.out
-#pca.out$loadings
-#names(pca.out)
-
-  pca.var <- (pca.out$sdev)^2
-  pca.var.max <- round(max(pca.var),1)
-  
-  pca.comp <- 1:length(pca.var)
-  pca.comp <- as.integer(pca.comp)
-  
-#screeplot(pca.out, type = "l")
-
-plot(pca.comp, pca.var, 
-       main = title,
-       xlab = "Number of Components", 
-       ylab = "Variances",
-       type = "l",
-       col  = "blue",
-       ylim = c(0, pca.var.max))
-
-plot(summary(pca.out)$importance[3,], type="l", 
-       ylab="% Variance Explained", 
-       xlab="nth component (decreasing order)", 
-       main = title,
-       col = "#161F63")
-
-pca.loadings <- as.data.frame(pca.out$rotation)
-```
-
-```{r pca-top-1-summary, eval=TRUE, echo=FALSE}
-options(scipen=1, digits=10)
-summary(pca.out)
-options(scipen=1, digits=5)
-```
-
-```{r pca-top-1-ggplots, eval=TRUE, echo=FALSE}
-pca <- pca.out
+pca <- prcomp(ld.top.ldata, retx = TRUE, center = T, scale = T)
 expl.var <- round(pca$sdev^2/sum(pca$sdev^2)*100) # percent explained variance
 
 
 pc <- c(1,2) # principal components to plot
 COLOR <- c(2:4)
 
-#plot(pca$x[,pc], cex=1, 
-# xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
-# ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
-#)
+plot(pca$x[,pc], cex=1, 
+ xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
+ ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
+)
 
-#screeplot(pca, type = "l")
+screeplot(pca, type = "l")
 
 scores = as.data.frame(pca$x)
 
@@ -473,150 +333,43 @@ COLORS <- c("#5da423","#5da423","#5da423","#5da423","#5da423","#5da423","#5da423
             "#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13")
 
 # plot of observations
-ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(ld.tstd))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle(title)
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC1, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC2, y = PC1, label = rownames(ld.tstd))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle(title)
+  ggtitle("PCA plot")
 
-ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
+ggplot(data = scores, aes(x = PC3, y = PC2, label = rownames(ld.tstd))) +
   geom_hline(yintercept = 0, colour = "gray65") +
   geom_vline(xintercept = 0, colour = "gray65") +
   geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle(title)
+  ggtitle("PCA plot")
 
 pairs(scores[1:5])
 ```
-
-```{r pca-top-1-ggplots, eval=TRUE, echo=FALSE}
-
-# Biplot
-#suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
+```{r}
 #pca <- prcomp(ld.tdata, retx = TRUE, center = TRUE, scale = TRUE)
+
+library(ggbiplot)
+
 ggbiplot(pca, obs.scale = 1, var.scale = 1,
   groups = c("Good","Poor"), ellipse = TRUE, circle = TRUE) +
   scale_color_discrete(name = '') +
   theme(legend.direction = 'horizontal', legend.position = 'top')
+
 ```
 
-```{r pca-top-2, eval=TRUE, echo=FALSE}
-
-title <- "PCA Top 100 - Log Transformed and Scaled"
-pca.out <- prcomp(ld.top.ldata, scale = TRUE, center = TRUE)
-#pca.out
-#pca.out$loadings
-#names(pca.out)
-
-  pca.var <- (pca.out$sdev)^2
-  pca.var.max <- round(max(pca.var),1)
-  
-  pca.comp <- 1:length(pca.var)
-  pca.comp <- as.integer(pca.comp)
-  
-#screeplot(pca.out, type = "l")
-
-plot(pca.comp, pca.var, 
-       main = title,
-       xlab = "Number of Components", 
-       ylab = "Variances",
-       type = "l",
-       col  = "blue",
-       ylim = c(0, pca.var.max))
-
-plot(summary(pca.out)$importance[3,], type="l", 
-       ylab="% Variance Explained", 
-       xlab="nth component (decreasing order)", 
-       main = title,
-       col = "#161F63")
-
-pca.loadings <- as.data.frame(pca.out$rotation)
-```
-
-```{r pca-top-2-summary, eval=TRUE, echo=FALSE}
-options(scipen=1, digits=10)
-summary(pca.out)
-options(scipen=1, digits=5)
-```
-
-```{r pca-top-2-ggplots, eval=TRUE, echo=FALSE}
-pca <- pca.out
-expl.var <- round(pca$sdev^2/sum(pca$sdev^2)*100) # percent explained variance
-
-
-pc <- c(1,2) # principal components to plot
-COLOR <- c(2:4)
-
-#plot(pca$x[,pc], cex=1, 
-# xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
-# ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)")
-#)
-
-#screeplot(pca, type = "l")
-
-scores = as.data.frame(pca$x)
-
-COLORS <- c("#5da423","#5da423","#5da423","#5da423","#5da423","#5da423","#5da423","#5da423",
-            "#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13","#c60f13")
-
-# plot of observations
-ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(ld.tdata))) +
-  geom_hline(yintercept = 0, colour = "gray65") +
-  geom_vline(xintercept = 0, colour = "gray65") +
-  geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle(title)
-
-ggplot(data = scores, aes(x = PC1, y = PC3, label = rownames(ld.tdata))) +
-  geom_hline(yintercept = 0, colour = "gray65") +
-  geom_vline(xintercept = 0, colour = "gray65") +
-  geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle(title)
-
-ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
-  geom_hline(yintercept = 0, colour = "gray65") +
-  geom_vline(xintercept = 0, colour = "gray65") +
-  geom_text(colour = COLORS, alpha = 0.8, size = 4) +
-  ggtitle(title)
-
-pairs(scores[1:5])
-```
-
-```{r pca-top-2-ggplots, eval=TRUE, echo=FALSE}
-
-# Biplot
-#suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
-#pca <- prcomp(ld.tdata, retx = TRUE, center = TRUE, scale = TRUE)
-ggbiplot(pca, obs.scale = 1, var.scale = 1,
-  groups = c("Good","Poor"), ellipse = TRUE, circle = TRUE) +
-  scale_color_discrete(name = '') +
-  theme(legend.direction = 'horizontal', legend.position = 'top')
-```
-
-
-```{r pca-top-2-heatmap, eval=TRUE, echo=FALSE}
-library("gplots") 
-
-ALLgroup <- as.factor(c("good","good","good","good","good","good","good","good",
-                        "poor","poor","poor","poor","poor","poor","poor","poor"))
-
-cool = rainbow(50, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('blue'))[1])
-warm = rainbow(50, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
-cols = c(rev(cool), rev(warm))
-mypalette <- colorRampPalette(cols)(255)
-
-par(mfrow=c(1,1))
-png("img/heatmap.png", width = 2000, height = 2000, res = 300)
-
-heatmap.2(as.matrix(scores), trace="none", col=mypalette, ColSideColors=COLORS[ALLgroup],
+```{r}
+heatmap.2(mat, trace="none", col=mypalette, ColSideColors=sidecols[ALLgroup],
           labRow=FALSE, labCol=FALSE, mar=c(6,12), scale="row", key.title="")
 legend("topright", legend=levels(ALLgroup), fill=sidecols, title="", cex=1.2)
 
-graphics.off()
 ```
 
 ## Dataset

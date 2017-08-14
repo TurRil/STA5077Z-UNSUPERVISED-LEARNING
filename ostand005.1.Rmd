@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # 1 - Leukemia Dataset
 
-```{r setup, eval=TRUE, echo=FALSE}
+```{r utils, eval=TRUE, echo=FALSE}
 # load the libraries and the data files
 source("utils.R")
 knitr::knit_hooks$set(inline = inline_hook) # change numbe format for inline text
@@ -108,7 +108,7 @@ ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
 pairs(scores[1:5])
 ```
 
-```{r pca-1-ggplots, eval=TRUE, echo=FALSE}
+```{r pca-1-ggbiplot, eval=TRUE, echo=FALSE}
 
 # Biplot
 #suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
@@ -202,7 +202,7 @@ pairs(scores[1:5])
 
 
 
-```{r pca-2-ggplots, eval=TRUE, echo=FALSE}
+```{r pca-2-ggbiplot, eval=TRUE, echo=FALSE}
 
 # Biplot
 #suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
@@ -296,7 +296,7 @@ ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
 pairs(scores[1:5])
 ```
 
-```{r pca-3-ggplots, eval=TRUE, echo=FALSE}
+```{r pca-3-ggbiplot, eval=TRUE, echo=FALSE}
 
 # Biplot
 #suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
@@ -389,7 +389,7 @@ ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
 pairs(scores[1:5])
 ```
 
-```{r pca-4-ggplots, eval=TRUE, echo=FALSE}
+```{r pca-4-ggbiplot, eval=TRUE, echo=FALSE}
 
 # Biplot
 #suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
@@ -494,7 +494,7 @@ ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
 pairs(scores[1:5])
 ```
 
-```{r pca-top-1-ggplots, eval=TRUE, echo=FALSE}
+```{r pca-top-1-ggbiplot, eval=TRUE, echo=FALSE}
 
 # Biplot
 #suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
@@ -586,7 +586,7 @@ ggplot(data = scores, aes(x = PC2, y = PC3, label = rownames(ld.tdata))) +
 pairs(scores[1:5])
 ```
 
-```{r pca-top-2-ggplots, eval=TRUE, echo=FALSE}
+```{r pca-top-2-ggbiplot, eval=TRUE, echo=FALSE}
 
 # Biplot
 #suppressWarnings(biplot(pca.out, scale = 0, cex =0.5, main = "PCA - Log Transformed and Scaled"))
@@ -614,7 +614,7 @@ png("img/heatmap.png", width = 2000, height = 2000, res = 300)
 
 heatmap.2(as.matrix(scores), trace="none", col=mypalette, ColSideColors=COLORS[ALLgroup],
           labRow=FALSE, labCol=FALSE, mar=c(6,12), scale="row", key.title="")
-legend("topright", legend=levels(ALLgroup), fill=sidecols, title="", cex=1.2)
+#legend("topright", legend=levels(ALLgroup), fill=sidecols, title="", cex=1.2)
 
 graphics.off()
 ```
@@ -672,159 +672,6 @@ If you’re starting with a covariance matrix, it’s a good idea to standardize
 
 We perform PCA to get insight of the general structure of a data set. We center, scale and sometimes log-transform to filter off some trivial effects, which could dominate our PCA. The algorithm of a PCA will in turn find the rotation of each PC to minimize the squared residuals, namely the sum of squared perpendicular distances from any sample to the PCs. Large values tend to have high leverage.
 
-
-# 2 - 
-
-```{r}
-lr.workflows.raw <- read.csv(file = "data/workflows.csv", sep = ",", quote = '"')
-lr.operations.raw <- read.csv(file = "data/operations.csv", sep = ",", quote = '"')
-```
-
-```{r}
-lr.workflows <- select(lr.workflows.raw, -parent_created, -parent_started, -parent_completed)
-names(lr.workflows)[1] = "parent"
-names(lr.workflows)[2] = "parent_type"
-lr.workflows$parent_type <- as.factor(lr.workflows$parent_type)
-lr.workflows$tracks <- as.factor(lr.workflows$tracks)
-lr.workflows$parent_day <- as.factor(lr.workflows$parent_day)
-lr.workflows$parent_hour <- as.factor(lr.workflows$parent_hour)
-lr.workflows$duration <- as.numeric(lr.workflows$duration)
-lr.workflows$duration <- lr.workflows$duration / 1000
-
-lr.operations <- select(lr.operations.raw, -created, -started, -completed) %>% na.omit()
-lr.operations$type <- as.factor(lr.operations$type)
-lr.operations$state <- as.factor(lr.operations$state)
-lr.operations$day <- as.factor(lr.operations$day)
-lr.operations$hour <- as.factor(lr.operations$hour)
-lr.operations[ lr.operations$queue < 0, ]$queue = 0 # cannot have negative time > set to 0
-
-lr.data <- left_join(lr.operations, lr.workflows, by = "parent") %>% filter(duration > 0) %>% na.omit()
-#lr.data <- as.tibble(lr.data)
-```
-
-```{r}
-lr.data %>% 
-group_by(type) %>% 
-summarize(count = n(), mean.queue_time = mean(queue), mean.run_time = mean(run)) %>% 
-mutate(mean.full_time = mean.queue_time + mean.run_time) %>% 
-arrange(desc(mean.full_time), type) %>% 
-as.tibble()
-```
-```{r}
-lr.som.data <- select(lr.data, type, queue, run, day, hour, tracks, duration) %>% 
-                mutate(full = queue + run) %>% 
-                select(type, queue, run, full, everything())
-
-
-
-# sapply(lr.som.data, class)
-
-summary(lr.som.data, maxsum = 30)
-```
-```{r}
-library(ggplot2)
-#plot(lr.som.data$duration, lr.som.data$run, label = lr.som.data$type)
-
-#save old settings
-op <- par(no.readonly = TRUE)
-
-#change settings
-par(mar=c(8, 4, 2, 2) + 0.1)
-
-z <- lr.som.data %>% group_by(type) %>% summarize(count = n()) %>% arrange(type)
-ggplot(z) + geom_bar( aes(count) )
-
-ggplot(z,
-  aes(x = factor(""), fill = count) ) +
-  geom_bar() +
-  coord_polar(theta = "y") +
-  scale_x_discrete("")
-
-
-#axis(1, at=1:length(levels(as.factor(lr.som.data$type))), labels=levels(as.factor(lr.som.data$type)), las = 2, cex.axis = 0.8)
-
-#reset settings
-par(op)
-
-
-hist(lr.som.data$duration, freq = T)
-```
-
-```{r}
-ggplot(lr.som.data, aes(type, queue, color=type)) + 
-  geom_point() + 
-  labs(title = "Queue time for Operations", x = "Type of Operation", y = "Queue time of operation (sec)", color = "Operation Types") + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust= 0.2), legend.position="none")
-```
-
-```{r}
-ggplot(lr.som.data, aes(type, run, color=type)) + 
-  geom_point() + 
-  labs(title = "Run time for Operations", x = "Type of Operation", y = "Run time of operation (sec)", color = "Operation Types") + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust= 0.2), legend.position="none")
-```
-```{r}
-filter(lr.som.data, type %in% c("composite", "editor", "inspect", "normalize-audio", "prepare-av", "segment-video")) %>% 
-  mutate(ratio = run/duration) %>%
-  group_by(type) %>% 
-  summarise( mean.run = mean(run), mean.duration = mean(duration), mean.ratio = mean(ratio)) %>%
-  arrange(type)
-#%>%
-#ggplot(aes(mean.duration, mean.run, color=type)) + 
-#  geom_point() + 
-#  labs(title = "Run time for Operations", x = "Type of Operation", y = "Run time of operation (sec)", color = "Operation Types") + 
-#  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust= 0.2), legend.position="none")
-```
-
-```{r}
-
-lr.som <- supersom(lr.som.data,
-                   whatmap = c("type","full"),
-                   somgrid(6, 6, "hexagonal"), 
-                   maxNA.fraction = .5)
-
-#whatmap = c("type", "state", "queue", "run", "day", "hour", "parent_type", "tracks", "duration"),
-
-
-plot(lr.som, type = "changes")
-
-barplot(lr.som$distances, names = 1:length(lr.som$distances), col = "#848484")
-
-# this should be a grey 10x10 dimensional matrix :p
-#plot(lr.som, type = "quality")
-#plot(lr.som, type = "dist.neighbours")
-#plot(lr.som, type = "property", property = 1)
-
-plot(lr.som)
-
-
-
-```
-
-```{r}
-library(cluster)
-library(MASS)
-library(smacof)
-
-lr.distance <- daisy(filter(lr.som.data, -queue, -run), metric="gower")
-out.Euc <- smacofSym(lr.distance, type="ratio")$conf
-```
-
-```{r}
-
-plot(out.Euc, type="1", xlab="", ylab="", xaxt="n", yaxt="n", asp=1, main= "MDS", col = levels(lr.som.data$type))
-
-for (i in 1:nrow(lr.som.data)) {
-  text (out.Euc[i,1], out.Euc[i,2], lr.som.data$type[i], cex=0.75)
-}
-```
-
-
-## Problem Statement
-
-## Data Description
-
-## Conclusion
 
 
 # References

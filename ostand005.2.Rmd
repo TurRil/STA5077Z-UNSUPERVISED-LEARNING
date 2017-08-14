@@ -1,0 +1,197 @@
+---
+title: "STA5077Z: UNSUPERVISED LEARNING - PROJECT"
+author: "Corne Oosthuizen - OSTAND005"
+date: 'Due: 14 August 2017'
+output:
+  word_document: default
+  html_document:
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+  comment: '>'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 2 - 
+
+```{r lr-data, eval=TRUE, echo=FALSE}
+
+options(scipen=1, digits=5)
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(ggplot2)))
+
+lr.workflows.raw <- read.csv(file = "data/workflows.csv", sep = ",", quote = '"')
+lr.operations.raw <- read.csv(file = "data/operations.csv", sep = ",", quote = '"')
+```
+
+```{r lr-data-transform, eval=TRUE, echo=FALSE}
+lr.workflows <- dplyr::select(lr.workflows.raw, -parent_created, -parent_started, -parent_completed)
+names(lr.workflows)[1] = "parent"
+names(lr.workflows)[2] = "parent_type"
+lr.workflows$parent_type <- as.factor(lr.workflows$parent_type)
+lr.workflows$tracks <- as.factor(lr.workflows$tracks)
+lr.workflows$parent_day <- as.factor(lr.workflows$parent_day)
+lr.workflows$parent_hour <- as.factor(lr.workflows$parent_hour)
+lr.workflows$duration <- as.numeric(lr.workflows$duration)
+lr.workflows$duration <- lr.workflows$duration / 1000
+
+lr.operations <- dplyr::select(lr.operations.raw, -created, -started, -completed) %>% na.omit()
+lr.operations$type <- as.factor(lr.operations$type)
+lr.operations$state <- as.factor(lr.operations$state)
+lr.operations$day <- as.factor(lr.operations$day)
+lr.operations$hour <- as.factor(lr.operations$hour)
+lr.operations[ lr.operations$queue < 0, ]$queue = 0 # cannot have negative time > set to 0
+
+lr.data <- left_join(lr.operations, lr.workflows, by = "parent") %>% filter(duration > 0) %>% na.omit()
+#lr.data <- as.tibble(lr.data)
+```
+```{r lr-display-1, eval=TRUE, echo=FALSE}
+names(lr.workflows)[2] = "type"
+names(lr.workflows)[5] = "queue"
+names(lr.workflows)[6] = "run"
+names(lr.workflows)[8] = "day"
+names(lr.workflows)[9] = "hour"
+
+lr.workflows %>%
+select(tracks, type, queue, run) %>%
+group_by(tracks, type) %>% 
+summarise(count = n(), mean.queue_time = mean(queue), mean.run_time = mean(run)) %>% 
+mutate(mean.full_time = mean.queue_time + mean.run_time) %>% 
+arrange(tracks, type) %>% 
+as.tibble()
+```
+```{r lr-summary-1, eval=TRUE, echo=FALSE}
+summary(select(lr.workflows, -parent))
+```
+
+```{r lr-display-2, eval=TRUE, echo=FALSE}
+lr.data %>% 
+group_by(type) %>% 
+summarise(count = n(), mean.queue_time = mean(queue), mean.run_time = mean(run)) %>% 
+mutate(mean.full_time = mean.queue_time + mean.run_time) %>% 
+arrange(desc(mean.full_time), type) %>% 
+as.tibble()
+```
+```{r lr-summary, eval=TRUE, echo=FALSE}
+lr.som.data <- select(lr.data, type, queue, run, day, hour, tracks, duration) %>% 
+                mutate(full = queue + run) %>% 
+                select(type, queue, run, full, everything())
+
+
+
+# sapply(lr.som.data, class)
+
+summary(lr.som.data, maxsum = 30)
+```
+```{r lr-plot, eval=TRUE, echo=FALSE}
+#plot(lr.som.data$duration, lr.som.data$run, label = lr.som.data$type)
+
+#save old settings
+op <- par(no.readonly = TRUE)
+
+#change settings
+par(mar=c(8, 4, 2, 2) + 0.1)
+
+z <- lr.som.data %>% group_by(type) %>% summarize(count = n()) %>% arrange(type)
+#ggplot(z) + geom_bar( aes(count) )
+
+#ggplot(z,
+#  aes(x = factor(""), fill = count) ) +
+#  geom_bar() +
+#  coord_polar(theta = "y") +
+#  scale_x_discrete("")
+
+#axis(1, at=1:length(levels(as.factor(lr.som.data$type))), labels=levels(as.factor(lr.som.data$type)), las = 2, cex.axis = 0.8)
+
+#reset settings
+par(op)
+
+hist(lr.som.data$queue, freq = T, xlab = "Queue Time", main = "Histogram of Recording Queue Time")
+hist(lr.som.data$run, freq = T, xlab = "Run Time", main = "Histogram of Recording Run Time")
+hist(lr.som.data$duration, freq = T, xlab = "Duration", main = "Histogram of Recording Duration")
+```
+
+```{r lr-plot-q, eval=TRUE, echo=FALSE}
+ggplot(lr.som.data, aes(type, queue, color=type)) + 
+  geom_point() + 
+  labs(title = "Queue time for Operations", x = "Type of Operation", y = "Queue time of operation (sec)", color = "Operation Types") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust= 0.2), legend.position="none")
+```
+
+```{r lr-plot-o, eval=TRUE, echo=FALSE}
+ggplot(lr.som.data, aes(type, run, color=type)) + 
+  geom_point() + 
+  labs(title = "Run time for Operations", x = "Type of Operation", y = "Run time of operation (sec)", color = "Operation Types") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust= 0.2), legend.position="none")
+```
+```{r lr-table-long, eval=TRUE, echo=FALSE}
+filter(lr.som.data, type %in% c("composite", "editor", "inspect", "normalize-audio", "prepare-av", "segment-video")) %>% 
+  mutate(ratio = run/duration) %>%
+  group_by(type) %>% 
+  summarise( mean.run = mean(run), mean.duration = mean(duration), mean.ratio = mean(ratio)) %>%
+  arrange(type)
+#%>%
+#ggplot(aes(mean.duration, mean.run, color=type)) + 
+#  geom_point() + 
+#  labs(title = "Run time for Operations", x = "Type of Operation", y = "Run time of operation (sec)", color = "Operation Types") + 
+#  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust= 0.2), legend.position="none")
+```
+
+```{r lr-som, eval=TRUE, echo=FALSE}
+library(kohonen)
+
+lr.m <- as.matrix(lr.som.data)
+lr.m.scaled <- lr.m
+lr.m.scaled[,c(2,3,4,8)] <- scale(lr.som.data[,c(2,3,4,8)])
+
+#som_grid <- somgrid(xdim = 10, ydim = 10, topo = "hexagonal")
+#som_model <- som(lr.m.scaled, grid = som_grid, rlen = 1000, alpha = c(0.05, 0.01), keep.data = T)
+
+
+#lr.som <- supersom(lr.m.scaled,
+#                   whatmap = c("type","full"),
+#                   somgrid(6, 6, "hexagonal"), 
+#                   maxNA.fraction = .5)
+
+#whatmap = c("type", "state", "queue", "run", "day", "hour", "parent_type", "tracks", "duration"),
+
+#plot(lr.som, type = "changes")
+#barplot(lr.som$distances, names = 1:length(lr.som$distances), col = "#848484")
+
+# this should be a grey 10x10 dimensional matrix :p
+#plot(lr.som, type = "quality")
+#plot(lr.som, type = "dist.neighbours")
+#plot(lr.som, type = "property", property = 1)
+
+#plot(lr.som)
+```
+
+```{r lr-mds, eval=TRUE, echo=FALSE}
+library(cluster)
+#library(MASS)
+library(smacof)
+
+lr.distance <- daisy(filter(lr.som.data, -queue, -run), metric="gower")
+out.Euc <- smacofSym(lr.distance, type="ratio")$conf
+```
+
+```{r lr-mds-plot, eval=TRUE, echo=FALSE}
+
+plot(out.Euc, type="1", xlab="", ylab="", xaxt="n", yaxt="n", asp=1, main= "MDS")#, col = levels(lr.som.data$type))
+
+for (i in 1:nrow(lr.som.data)) {
+  text (out.Euc[i,1], out.Euc[i,2], lr.som.data$type[i], cex=0.75)
+}
+```
+
+
+## Problem Statement
+
+## Data Description
+
+## Conclusion
+
+
